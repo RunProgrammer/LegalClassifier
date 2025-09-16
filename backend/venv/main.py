@@ -14,7 +14,7 @@ import mammoth
 
 
 
-cli = genai.Client(api_key='apikey')
+cli = genai.Client(api_key='AIzaSyBikr4vAWUw4Ost3FfzpIvrSMAExbfVbLM')
 
 
 async def handlePdf(f : UploadFile):
@@ -71,8 +71,14 @@ async def handleDocx(f : UploadFile):
 
 
 
-def handleText():
-    pass
+async def handleText(file : UploadFile):
+    raw = await file.read()
+    try :
+        decoed = raw.decode('utf-8')
+        return decoed
+    except Exception as e :
+        return f"⚠️ Error reading text file: {e}"
+    
 
 
 async def summarize(req : str):
@@ -128,10 +134,10 @@ def _normalize_context(item: QAContext) -> str:
 async def qa(req : UserQA):
     
     summaries = "\n".join(_normalize_context(c) for c in req.context)
-    prompt = f'''Answer the question using the given context.  
-- If the information is clearly present, answer it creatively with known facts.  
-- If it is not exact but can be reasonably inferred, give the best possible explanation.  
-- If completely unrelated, reply: "Out of context". 
+    prompt = f'''You are a Question-Answering assistant. Use the provided CONTEXT as the primary source of truth.
+- If the question can be reasonably answered from the context (even if not word-for-word), provide a concise, practical answer.
+- If the question goes slightly beyond the context, infer using logical reasoning but keep it related to the context.
+- If the question is completely unrelated, reply only: "Out of context."
 
 
     Question:

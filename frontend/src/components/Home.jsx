@@ -8,6 +8,7 @@ function Home(){
     const [lang , setLang] = useState('english')
     const [qa , setQa] = useState(false)
     const [context , setContext] = useState([])
+    const [loading , setLoading] = useState(false)
     
     
     async function handleUpload(e) {
@@ -22,6 +23,8 @@ function Home(){
             formData.append("language",lang)
             
             console.log(...formData)
+
+            setLoading(true)
 
             try{
                 const res = await axios.post("http://127.0.0.1:8000/upload",formData)
@@ -45,13 +48,16 @@ function Home(){
             }
         } catch (error){
             console.log("Error in handleupload : ",error)
+        } finally {
+            setLoading(false)
         }
     }
 
     async function handleText(e) {
         e.preventDefault()
         try {
-           
+            
+            setLoading(true)
             console.log("User input no problem")
             try {
                 
@@ -72,12 +78,15 @@ function Home(){
             }
         } catch (error){
             console.log("Error in data input : ",error)
+        } finally {
+            setLoading(false)
         }
     }
 
     async function handleQA(e) {
         e.preventDefault()
         console.log(qaValue)
+        setLoading(true)
         try {
             const summaryOnly = context.map((con) => ({summary : con.summary}))
             const res = await axios.post('http://127.0.0.1:8000/qa',{
@@ -91,7 +100,13 @@ function Home(){
         } 
         catch (error){
             console.log("Error in qa : ",error)
+        } finally {
+            setLoading(false)
         }
+    }
+
+    function Spinner() {
+        return <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>;
     }
 
     
@@ -134,6 +149,7 @@ function Home(){
                         </div>
                     </div>}
                 </div>
+                {loading && <div className="flex justify-center"><Spinner /></div>}
             </div>
             
         </div>
