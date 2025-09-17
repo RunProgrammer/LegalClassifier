@@ -1,160 +1,266 @@
-import axios from 'axios'
-import { useState } from 'react'
+import axios from 'axios';
+import { useState } from 'react';
 
-function Home(){
+// --- Reusable UI Components ---
 
-    const [userIp,setUserIP] = useState('')
-    const [qaValue , setQAValue] = useState('')
-    const [lang , setLang] = useState('english')
-    const [qa , setQa] = useState(false)
-    const [context , setContext] = useState([])
-    const [loading , setLoading] = useState(false)
-    
-    
-    async function handleUpload(e) {
-        e.preventDefault()
-        try {
-            const listFiles = e.target.fileIP.files // retruns the list of files
-            const formData = new FormData()
-
-            for (let i =0;i<listFiles.length;i++){
-                formData.append("files",listFiles[i])
-            }
-            formData.append("language",lang)
-            
-            console.log(...formData)
-
-            setLoading(true)
-
-            try{
-                const res = await axios.post("http://127.0.0.1:8000/upload",formData)
-                const data = res.data
-                console.log(data.msg)
-                let polishedData = data.msg
-                for (let i =0;i<polishedData.length;i++){
-                    console.log(polishedData[i].fileSummary)
-                } 
-                setContext(prev => [
-                    ...prev,
-                    ...polishedData.map(file => ({
-                        summary: file.fileSummary
-                    }))
-                ])
-                setQa(true)
-
-
-            } catch (error){
-                console.log("Error in axios : ",error)
-            }
-        } catch (error){
-            console.log("Error in handleupload : ",error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    async function handleText(e) {
-        e.preventDefault()
-        try {
-            
-            setLoading(true)
-            console.log("User input no problem")
-            try {
-                
-                const res = await axios.post("http://127.0.0.1:8000/summary",{
-                    text : userIp,
-                    language : lang
-                })
-                const data = res.data
-                const d = data.msg
-                console.log(d)
-                setContext(prev => [
-                    ...prev,
-                    {summary : d}
-                ])
-                setQa(true)
-            } catch (error){
-                console.log("Error in text Axios" , error)
-            }
-        } catch (error){
-            console.log("Error in data input : ",error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    async function handleQA(e) {
-        e.preventDefault()
-        console.log(qaValue)
-        setLoading(true)
-        try {
-            const summaryOnly = context.map((con) => ({summary : con.summary}))
-            const res = await axios.post('http://127.0.0.1:8000/qa',{
-                question : qaValue,
-                context : summaryOnly,
-                language : lang
-            })
-            const data = res.data
-            const polishedData = data.msg
-            console.log(polishedData)
-        } 
-        catch (error){
-            console.log("Error in qa : ",error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    function Spinner() {
-        return <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>;
-    }
-
-    
-
-    return (
-        <div className="h-screen w-full flex justify-center items-center bg-blue-950">
-            <div className="flex flex-col">
-                <div className="bg-white rounded-2xl">
-                    <div>
-                        <form action="submit" onSubmit={handleText}>
-                            <input type="text" name='summText' value={userIp} onChange={(e) => {setUserIP(e.target.value)}} placeholder="Enter the text" className="p-2 border-2 rounded-2xl"/>
-                            <button type="submit">Submit</button>
-                        </form>
-                    </div>
-                </div>
-                <div className="bg-teal-200 p-2 rounded-2xl">
-                    <div>
-                        <form action="submit" onSubmit={handleUpload}>
-                            <input type="file" multiple name="fileIP" id="" />
-                            <button type="submit">Upload</button>
-                        </form>
-                    </div>
-                </div>
-                <div>
-                    <label htmlFor="" className='text-white'>Choose the language of the summary</label>
-                    <select value={lang} className='p-2 bg-white' onChange={(e) => {setLang(e.target.value)}} id="">
-                        <option value="english">English</option>
-                        <option value="tamil">Tamil</option>
-                        <option value="malayalam">Malayalam</option>
-                        <option value="hindi">Hindi</option>
-                    </select>
-                </div>
-                <div>
-                    {qa === true && <div className='bg-slate-800 text-white rounded-2xl p-2'>
-                        <div>
-                            <form action="" onSubmit={handleQA}>
-                                <input type="text" value={qaValue} onChange={(e) => {setQAValue(e.target.value)}} className='border-2 rounded-2xl p-2 '/>
-                                <button type="submit">Send</button>
-                            </form>
-                        </div>
-                    </div>}
-                </div>
-                {loading && <div className="flex justify-center"><Spinner /></div>}
-            </div>
-            
-        </div>
-        
-    )
+function Spinner() {
+    return <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>;
 }
 
-export default Home
+function FileUpload({ onUpload, isLoading }) {
+    return (
+        <form onSubmit={onUpload} className="w-full bg-slate-800 p-8 rounded-lg flex flex-col items-center gap-4 border-2 border-dashed border-slate-600">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <h2 className="text-xl font-semibold text-white">Legal Docs Upload (For Explanation)</h2>
+            <p className="text-sm text-slate-400">Upload PDF, DOCX, or TXT files</p>
+            <input
+                type="file"
+                multiple
+                name="fileIP"
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-violet-600 file:text-white hover:file:bg-violet-500"
+                disabled={isLoading}
+            />
+            <button type="submit" disabled={isLoading} className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 px-4 rounded-md disabled:bg-gray-500 flex justify-center">
+                {isLoading ? <Spinner /> : 'Analyze Documents'}
+            </button>
+        </form>
+    );
+}
+
+function ProcedureWalkthrough({ onGenerate, isLoading }) {
+    return (
+        <form onSubmit={onGenerate} className="w-full bg-slate-800 p-8 rounded-lg flex flex-col gap-4">
+            <h2 className="text-xl font-semibold text-white">Legal Procedure Walkthrough</h2>
+            <p className="text-sm text-slate-400">Describe your goal and get a step-by-step plan.</p>
+            <textarea
+                name="goal"
+                placeholder="e.g., I want to buy a flat in Bangalore"
+                className="p-2 bg-slate-700 border-slate-600 rounded-md h-24 text-white"
+                disabled={isLoading}
+            />
+            <button type="submit" disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-md disabled:bg-gray-500 flex justify-center">
+                {isLoading ? <Spinner /> : 'Generate Roadmap'}
+            </button>
+        </form>
+    );
+}
+
+
+// --- Main Home Component ---
+
+function Home() {
+    // --- State Management ---
+    const [language, setLanguage] = useState('english');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [results, setResults] = useState(null);
+    const [qaInput, setQaInput] = useState('');
+    const [qaHistory, setQaHistory] = useState([]);
+
+    // --- API Handlers ---
+
+    const handleFileUpload = async (e) => {
+        e.preventDefault();
+        const files = e.target.fileIP.files;
+        if (!files || files.length === 0) {
+            setError("Please select at least one file to upload.");
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+        setResults(null);
+        setQaHistory([]);
+
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append("files", files[i]);
+        }
+        formData.append("language", language);
+
+        try {
+            const res = await axios.post("http://127.0.0.1:8000/upload", formData);
+            const apiResponse = res.data.msg[0];
+            const structuredData = JSON.parse(apiResponse.fileSummary);
+
+            setResults({
+                alerts: structuredData.alerts,
+                keyPoints: structuredData.key_points,
+                timeline: null,
+                summaries: [{ 
+                    fileName: apiResponse.fileName, 
+                    summary: structuredData.summary 
+                }]
+            });
+
+        } catch (err) {
+            setError("Failed to analyze documents. Ensure the backend is running and the API response is valid JSON.");
+            console.error("API Error:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleProcedureGeneration = async (e) => {
+        e.preventDefault();
+        const goal = e.target.goal.value;
+        if (!goal.trim()) {
+            setError("Please describe your goal.");
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+        setResults(null);
+        setQaHistory([]);
+
+        try {
+            // NOTE: This requires a '/roadmap' endpoint on your backend that returns a similar JSON structure.
+            const res = await axios.post("http://127.0.0.1:8000/roadmap", { text: goal, language });
+            const data = JSON.parse(res.data.msg); // Assuming roadmap endpoint also returns structured JSON string
+
+            setResults({
+                alerts: data.alerts || [],
+                keyPoints: data.key_points || [],
+                timeline: data.timeline || [],
+                summaries: null
+            });
+
+        } catch (err) {
+            setError("Failed to generate the procedure. Please try again.");
+            console.error("API Error:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const handleQA = async (e) => {
+        e.preventDefault();
+        if (!qaInput.trim() || !results.summaries) return;
+
+        setIsLoading(true);
+        const currentQuestion = qaInput;
+        setQaInput('');
+
+        try {
+            const contextForQa = results.summaries.map(s => ({ summary: s.summary }));
+            const res = await axios.post('http://127.0.0.1:8000/qa', {
+                question: currentQuestion,
+                context: contextForQa,
+                language: language
+            });
+            
+            setQaHistory(prev => [...prev, { question: currentQuestion, answer: res.data.msg }]);
+        } catch (err) {
+            setError("Could not get an answer. Please try again.");
+            setQaInput(currentQuestion);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
+    // --- JSX Render ---
+    return (
+        <div className="min-h-screen w-full bg-blue-950 p-4 md:p-8 text-white font-sans">
+            <div className="max-w-7xl mx-auto">
+                <header className="text-center mb-8">
+                    <h1 className="text-4xl md:text-5xl font-bold">Legally Made Easy</h1>
+                    <p className="text-lg text-slate-300 mt-2">Your AI-Powered Legal & Procedural Navigator</p>
+                </header>
+
+                {!results && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                        <FileUpload onUpload={handleFileUpload} isLoading={isLoading} />
+                        <ProcedureWalkthrough onGenerate={handleProcedureGeneration} isLoading={isLoading} />
+                    </div>
+                )}
+                
+                {isLoading && <div className="flex justify-center mt-8"><Spinner /></div>}
+                {error && <div className="bg-red-500 p-4 rounded-md text-center mt-8">{error}</div>}
+
+                {results && (
+                    <div className="mt-8 bg-slate-900 p-6 rounded-lg border border-slate-700 animate-fade-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-3xl font-bold text-white">Analysis Dashboard</h2>
+                            <button onClick={() => setResults(null)} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-md">Start Over</button>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2 flex flex-col gap-6">
+                                <div className="bg-slate-800 p-6 rounded-lg">
+                                    <h3 className="text-xl font-semibold text-red-400 mb-4">⚠️ To be addressed</h3>
+                                    {results.alerts && results.alerts.length > 0 ? (
+                                        <ul className="space-y-2">
+                                            {results.alerts.map((alert, i) => (
+                                                <li key={i} className="bg-red-900/50 p-3 rounded-md border border-red-500/50">
+                                                    <strong className="text-red-300">Severity: {alert.severity}</strong> - {alert.message}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : <p className="text-slate-400">No critical issues found.</p>}
+                                </div>
+
+                                <div className="bg-slate-800 p-6 rounded-lg">
+                                    <h3 className="text-xl font-semibold text-green-400 mb-4">✅ Key Points (To Note)</h3>
+                                    {results.keyPoints && results.keyPoints.length > 0 ? (
+                                        <ul className="list-disc list-inside space-y-2 text-slate-300">
+                                            {results.keyPoints.map((point, i) => <li key={i}>{point}</li>)}
+                                        </ul>
+                                    ) : <p className="text-slate-400">No key points extracted.</p>}
+                                </div>
+                                
+                                {results.summaries && (
+                                <div className="bg-slate-800 p-6 rounded-lg">
+                                    <h3 className="text-xl font-semibold text-cyan-400 mb-4">💬 Chat with your Document(s)</h3>
+                                    <div className="space-y-4 mb-4 max-h-60 overflow-y-auto p-2">
+                                        {qaHistory.map((qa, index) => (
+                                            <div key={index}>
+                                                <p className="font-semibold text-slate-300">You: {qa.question}</p>
+                                                <p className="whitespace-pre-wrap text-cyan-200">AI: {qa.answer}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <form onSubmit={handleQA} className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={qaInput}
+                                            onChange={(e) => setQaInput(e.target.value)}
+                                            placeholder="Ask a follow-up question..."
+                                            className="flex-grow p-2 bg-slate-700 border-slate-600 rounded-md text-white"
+                                            disabled={isLoading}
+                                        />
+                                        <button type="submit" disabled={isLoading} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold p-2 rounded-md disabled:bg-gray-500">Send</button>
+                                    </form>
+                                </div>
+                                )}
+                            </div>
+                            
+                            <div className="lg:col-span-1 bg-slate-800 p-6 rounded-lg">
+                                <h3 className="text-xl font-semibold text-blue-400 mb-4">🗓️ Time Line / Roadmap</h3>
+                                {results.timeline && results.timeline.length > 0 ? (
+                                    <ol className="relative border-l border-slate-600 space-y-6">
+                                        {results.timeline.map((step, i) => (
+                                            <li key={i} className="ml-6">
+                                                <span className="absolute flex items-center justify-center w-6 h-6 bg-blue-600 rounded-full -left-3 ring-8 ring-slate-800">
+                                                    <svg className="w-2.5 h-2.5 text-blue-100" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                                      <path d="M20 4a2 2 0 0 0-2-2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v2h20V4Z"/>
+                                                    </svg>
+                                                </span>
+                                                <p className="text-slate-300">{step}</p>
+                                            </li>
+                                        ))}
+                                    </ol>
+                                ) : <p className="text-slate-400">No procedural timeline available.</p>}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+export default Home;

@@ -1,237 +1,214 @@
-from fastapi import FastAPI , status , UploadFile , File , Form
-from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional , List , Dict ,Union
-from pydantic import BaseModel
-from google import genai
-from google.genai import types
+
+import os
 import asyncio
-import fitz
+import io
+import json
+from typing import List
+
+# --- Third-party libraries ---
+import fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
-import io
 import docx
 import mammoth
+from dotenv import load_dotenv
+from fastapi import FastAPI, status, UploadFile, File, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+# --- Google Gemini ---
+from google import generativeai as genai
+
+GOOGLE_API_KEY = "AIzaSyBikr4vAWUw4Ost3FfzpIvrSMAExbfVbLM"
+if not GOOGLE_API_KEY:
+    raise ValueError("GOOGLE_API_KEY environment variable not set!")
+genai.configure(api_key=GOOGLE_API_KEY)
+GEMINI_MODEL_NAME = "gemini-1.5-flash-latest"
+model = genai.GenerativeModel(GEMINI_MODEL_NAME)
 
 
+# --- Pydantic Models ---
+class UserText(BaseModel):
+    text: str
+    language: str
 
-cli = genai.Client(api_key='AIzaSyBikr4vAWUw4Ost3FfzpIvrSMAExbfVbLM')
+class QAContextItem(BaseModel):
+    summary: str
+
+class UserQA(BaseModel):
+    question: str
+    context: List[QAContextItem]
+    language: str
 
 
-async def handlePdf(f : UploadFile):
+# --- File Processing Helpers (with improved error handling) ---
+
+async def handle_pdf(file: UploadFile) -> str:
     try:
-        raw_bytes = await f.read()
+        raw_bytes = await file.read()
         doc = fitz.open(stream=raw_bytes, filetype="pdf")
         text = ""
-
         for page in doc:
             page_text = page.get_text("text")
             if page_text.strip():
                 text += page_text + "\n"
             else:
-                
                 pix = page.get_pixmap()
                 img = Image.open(io.BytesIO(pix.tobytes("png")))
                 text += pytesseract.image_to_string(img) + "\n"
-
         return text.strip()
     except Exception as e:
-        return str(e)
+        raise HTTPException(status_code=500, detail=f"Failed to process PDF: {e}")
 
-
-
-async def handleDocx(f : UploadFile):
-    try :
-        raw = await f.read()
-        try :
-            result = mammoth.extract_raw_text(io.BytesIO(raw))
-            text = result.value.strip()
-        except Exception as e:
-            return "Mammoth not working exception"
-            text = ""
-        
+async def handle_docx(file: UploadFile) -> str:
+    try:
+        raw_bytes = await file.read()
+        result = mammoth.extract_raw_text(io.BytesIO(raw_bytes))
+        text = result.value.strip()
         if not text or len(text) < 30:
-            try :
-                docs = docx.Document(io.BytesIO(raw))
-                parts = [pages.text for pages in docs.paragraphs if pages.text.strip()]
-                for tables in docs.tables:
-                    for row in tables:
-                        rowData = [cell.text for cell in row.cells]
-                        parts.append(" | ".join(rowData))
-                text = "\n".join(parts)
-            
-            except Exception as e:
-                return f"⚠️ Failed to extract docx: {e}"
-    
+            doc = docx.Document(io.BytesIO(raw_bytes))
+            parts = [p.text for p in doc.paragraphs if p.text.strip()]
+            text = "\n".join(parts)
         return text.strip()
-    
     except Exception as e:
-        return f"⚠️ Error reading docx: {e}"
+        raise HTTPException(status_code=500, detail=f"Failed to process DOCX: {e}")
+
+async def handle_txt(file: UploadFile) -> str:
+    try:
+        content = await file.read()
+        return content.decode('utf-8').strip()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read TXT file: {e}")
 
 
+# --- AI Logic Helpers ---
 
+async def analyze_document_text(text: str, language: str) -> str:
+    """Generates a structured JSON summary from document text."""
+    prompt = f"""
+    Analyze the following text. Respond ONLY with a single valid JSON object.
+    The JSON object must have these keys: "alerts", "key_points", "summary".
 
+    - "alerts": A list of objects. Each object must have "severity" ('High', 'Medium', or 'Low') and "message" (a risk or important clause). If no risks are found, return an empty list [].
+    - "key_points": A list of the most important points as strings.
+    - "summary": A brief overall summary of the text as a single string.
 
-async def handleText(file : UploadFile):
-    raw = await file.read()
-    try :
-        decoed = raw.decode('utf-8')
-        return decoed
-    except Exception as e :
-        return f"⚠️ Error reading text file: {e}"
-    
+    Analyze this text:
+    ---
+    {text}
+    ---
+    Translate the text content within the final JSON object into this language: {language}
+    """
+    try:
+        response = await model.generate_content_async(
+            prompt,
+            generation_config={"response_mime_type": "application/json"}
+        )
+        return response.text
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gemini document analysis failed: {e}")
 
+async def generate_roadmap_from_goal(text: str, language: str) -> str:
+    """Generates a structured JSON roadmap from a user's goal."""
+    prompt = f"""
+    Analyze the following user goal. Your task is to generate a procedural roadmap.
+    You must respond ONLY with a single valid JSON object.
+    The JSON object must have these keys: "alerts", "key_points", "timeline".
 
-async def summarize(req : str):
-   
-    prompt = f'''You are a professional summarizer.
+    - "alerts": A list of objects with "severity" and "message" about common risks or prerequisites for this goal.
+    - "key_points": A list of crucial tips or facts related to the goal.
+    - "timeline": A list of strings representing the step-by-step procedural roadmap.
 
-    Task:
-    - Summarize and walkthrough through the following text into EXACTLY 10 or 12 bullet points.
-    - The entire summary MUST be under 100 words.
-    - Do not add extra explanations or notes.
-    - Output ONLY the bullet points.
+    Analyze this goal:
+    ---
+    {text}
+    ---
+    Generate the roadmap and translate the content within the final JSON object into this language: {language}
+    """
+    try:
+        response = await model.generate_content_async(
+            prompt,
+            generation_config={"response_mime_type": "application/json"}
+        )
+        return response.text
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gemini roadmap generation failed: {e}")
 
-    Text to summarize:
-    {req.text}
-    
-    Language to be converted to:
-    {req.language}'''
-    response =  cli.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-        thinking_config=types.ThinkingConfig(thinking_budget=0) # Disables thinking
-        ),
-    )
-    return response.text
-
-QAContext = Union[str, List[str], Dict[str, Union[str, List[str]]]]
-class UserQA(BaseModel):
-    question : str
-    context : List[QAContext]
-    language  : str
-
-
-def _normalize_context(item: QAContext) -> str:
-    if isinstance(item, dict):
-        # include both summary and file content if present
-        parts = []
-        if "summary" in item:
-            s = item["summary"]
-            if isinstance(s, list):
-                parts.append("\n".join(str(x) for x in s))
-            else:
-                parts.append(str(s))
-        if "fileContent" in item:   # <-- include full content
-            parts.append(str(item["fileContent"]))
-        return "\n".join(parts)
-    elif isinstance(item, list):
-        return "\n".join(str(x) for x in item)
-    else:
-        return str(item)
-
-
-async def qa(req : UserQA):
-    
-    summaries = "\n".join(_normalize_context(c) for c in req.context)
-    prompt = f'''You are a Question-Answering assistant. Use the provided CONTEXT as the primary source of truth.
-- If the question can be reasonably answered from the context (even if not word-for-word), provide a concise, practical answer.
-- If the question goes slightly beyond the context, infer using logical reasoning but keep it related to the context.
-- If the question is completely unrelated, reply only: "Out of context."
-
-
-    Question:
-    {req.question}
-
-    Context to answer:
+async def answer_question(req: UserQA) -> str:
+    """Answers a question based on context."""
+    summaries = "\n".join(c.summary for c in req.context)
+    prompt = f"""You are a Question-Answering assistant. Use the provided CONTEXT as your ONLY source of truth.
+    - Answer the question concisely based on the context.
+    - If the question cannot be answered, reply only with: "I cannot answer this question based on the provided context."
+    Question: {req.question}
+    Context:
+    ---
     {summaries}
-    
-    Language to be converted to:
-    {req.language}'''
-    response =  cli.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-        thinking_config=types.ThinkingConfig(thinking_budget=0) # Disables thinking
-        ),
-    )
-    return response.text
-    
-app = FastAPI()
+    ---
+    Answer in this language: {req.language}"""
+    try:
+        response = await model.generate_content_async(prompt)
+        return response.text
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gemini Q&A failed: {e}")
 
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173"
-]
 
+# --- FastAPI App ---
+app = FastAPI(title="Legally Made Easy API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow frontend origin(s)
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # GET, POST, PUT, DELETE...
-    allow_headers=["*"],  # Authorization, Content-Type...
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
-class UserText(BaseModel):
-    text : str
-    language : str
-
-
-class UserFile(BaseModel):
-    text : str
-    language : str
-
-
-
-
+# --- Endpoint Logic ---
 
 @app.get('/')
 async def root():
-    return {"msg" : "Fast API 🚀" , "status":status.HTTP_200_OK}
+    return {"message": "API is running 🚀"}
 
+async def process_and_analyze_file(file: UploadFile, language: str):
+    """Helper to process one file and return its structured data."""
+    filename = file.filename
+    extension_handlers = {".pdf": handle_pdf, ".docx": handle_docx, ".txt": handle_txt}
+    
+    handler = None
+    for ext, func in extension_handlers.items():
+        if filename.lower().endswith(ext):
+            handler = func
+            break
+            
+    if not handler:
+        return {"fileName": filename, "error": "File type not supported."}
 
-@app.post('/summary')
-async def summaryHandle(text : UserText):
-    response = await summarize(text)
-    return {"msg" : response , "status" : status.HTTP_200_OK}
-
-#//TODO: ADD MULTI-LINGUAL FEATURE AND ADD CONTEXT AWARE Q/Z
+    content = await handler(file)
+    # The summary field now contains the structured JSON string
+    structured_summary = await analyze_document_text(content, language)
+    
+    return {
+        "fileName": filename,
+        "fileContent": content, # Keeping for potential future use
+        "fileSummary": structured_summary, # This is the JSON string
+    }
 
 @app.post('/upload')
-async def uploadHandle(files : list[UploadFile] = File(...) , language : str = Form('english')):
-    print(files)
-    fileData = []
-    for f in files:
-        fileName = f.filename.split(".")[1]
-        print(fileName)
-        if fileName == "txt":
-            content = await handleText(f)
-        elif fileName == "pdf":
-            content = await handlePdf(f)
-        elif fileName == "docx" or fileName == "doc":
-            content = await handleDocx(f)
-        else:
-            return {"msg" : "File Not supported" , "status" : status.HTTP_406_NOT_ACCEPTABLE}
-        f.seek(0)
-        summit = await summarize(UserFile(text = content , language=language))
-        fileData.append({
-           "fileName" : f.filename,
-           "fileContent" : content,
-           "fileSize" : len(content),
-           "fileSummary" : summit
-        })
+async def upload_handle(files: List[UploadFile] = File(...), language: str = Form('english')):
+    """Handles concurrent file uploads and returns structured analysis."""
+    tasks = [process_and_analyze_file(file, language) for file in files]
+    results = await asyncio.gather(*tasks)
+    return {"msg": results}
 
-    return {"msg" : fileData , "status" : status.HTTP_202_ACCEPTED}
-
+@app.post('/roadmap')
+async def roadmap_handle(req: UserText):
+    """Handles a user goal and returns a structured roadmap."""
+    response = await generate_roadmap_from_goal(req.text, req.language)
+    return {"msg": response}
 
 @app.post('/qa')
-async def qahandle(req : UserQA):
-    try :
-        response = await qa(req)
-        return {"msg" : response , "status" : status.HTTP_200_OK}
-
-    except Exception as e:
-        return {"msg" : "Erro from fast api" , "status" : status.HTTP_400_BAD_REQUEST}
-    
+async def qa_handle(req: UserQA):
+    response = await answer_question(req)
+    return {"msg": response}
