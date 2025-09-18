@@ -1,7 +1,5 @@
-
 import os
 import asyncio
-import io
 import json
 from typing import List
 
@@ -18,6 +16,8 @@ from pydantic import BaseModel
 
 # --- Google Gemini ---
 from google import generativeai as genai
+
+# --- Configuration ---
 
 GOOGLE_API_KEY = "AIzaSyBikr4vAWUw4Ost3FfzpIvrSMAExbfVbLM"
 if not GOOGLE_API_KEY:
@@ -41,8 +41,7 @@ class UserQA(BaseModel):
     language: str
 
 
-# --- File Processing Helpers (with improved error handling) ---
-
+# --- File Processing Helpers (No changes needed here) ---
 async def handle_pdf(file: UploadFile) -> str:
     try:
         raw_bytes = await file.read()
@@ -81,17 +80,19 @@ async def handle_txt(file: UploadFile) -> str:
         raise HTTPException(status_code=500, detail=f"Failed to read TXT file: {e}")
 
 
-# --- AI Logic Helpers ---
+# --- AI Logic Helpers (Prompts Updated) ---
 
 async def analyze_document_text(text: str, language: str) -> str:
-    """Generates a structured JSON summary from document text."""
+    """[MODIFIED] Generates a more detailed structured JSON from document text."""
     prompt = f"""
-    Analyze the following text. Respond ONLY with a single valid JSON object.
-    The JSON object must have these keys: "alerts", "key_points", "summary".
+    Analyze the following legal text. Act as a meticulous legal analyst.
+    You MUST respond ONLY with a single valid JSON object.
+    The JSON object must have these exact keys: "favourable_terms", "clauses_to_watch", "summary", "alerts".
 
-    - "alerts": A list of objects. Each object must have "severity" ('High', 'Medium', or 'Low') and "message" (a risk or important clause). If no risks are found, return an empty list [].
-    - "key_points": A list of the most important points as strings.
-    - "summary": A brief overall summary of the text as a single string.
+    - "favourable_terms": A list of strings identifying terms that are beneficial to the primary user.
+    - "clauses_to_watch": A list of strings pointing out clauses that require careful review or may contain risks.
+    - "summary": A detailed, multi-point summary of the document's purpose and key contents.
+    - "alerts": A list of objects. Each object must have "severity" ('High', 'Medium', or 'Low') and "message" for critical risks. If none, return an empty list [].
 
     Analyze this text:
     ---
@@ -111,19 +112,15 @@ async def analyze_document_text(text: str, language: str) -> str:
 async def generate_roadmap_from_goal(text: str, language: str) -> str:
     """Generates a structured JSON roadmap from a user's goal."""
     prompt = f"""
-    Analyze the following user goal. Your task is to generate a procedural roadmap.
-    You must respond ONLY with a single valid JSON object.
-    The JSON object must have these keys: "alerts", "key_points", "timeline".
+    Analyze the following user goal. Generate a procedural roadmap.
+    Respond ONLY with a single valid JSON object with keys: "alerts", "key_points", "timeline".
 
-    - "alerts": A list of objects with "severity" and "message" about common risks or prerequisites for this goal.
-    - "key_points": A list of crucial tips or facts related to the goal.
-    - "timeline": A list of strings representing the step-by-step procedural roadmap.
+    - "alerts": List of objects with "severity" and "message" about common risks for this goal.
+    - "key_points": List of crucial tips or facts.
+    - "timeline": List of strings for the step-by-step roadmap.
 
-    Analyze this goal:
-    ---
-    {text}
-    ---
-    Generate the roadmap and translate the content within the final JSON object into this language: {language}
+    Analyze this goal: "{text}"
+    Translate the JSON content into this language: {language}
     """
     try:
         response = await model.generate_content_async(
@@ -135,16 +132,19 @@ async def generate_roadmap_from_goal(text: str, language: str) -> str:
         raise HTTPException(status_code=500, detail=f"Gemini roadmap generation failed: {e}")
 
 async def answer_question(req: UserQA) -> str:
-    """Answers a question based on context."""
-    summaries = "\n".join(c.summary for c in req.context)
-    prompt = f"""You are a Question-Answering assistant. Use the provided CONTEXT as your ONLY source of truth.
-    - Answer the question concisely based on the context.
-    - If the question cannot be answered, reply only with: "I cannot answer this question based on the provided context."
-    Question: {req.question}
-    Context:
+    """[MODIFIED] Answers a question with more intelligence."""
+    context_str = "\n".join(c.summary for c in req.context)
+    prompt = f"""You are a helpful legal and procedural assistant. Your primary goal is to answer the user's question.
+    1. First, try to answer the question using the provided CONTEXT.
+    2. If the context does not contain the answer but the question is related to the topic, use your general knowledge to provide a helpful, relevant response. Clearly state that this information is from your general knowledge and not the provided document.
+    3. If the question is completely unrelated to the context, politely decline to answer.
+
+    CONTEXT:
     ---
-    {summaries}
+    {context_str}
     ---
+    QUESTION: {req.question}
+
     Answer in this language: {req.language}"""
     try:
         response = await model.generate_content_async(prompt)
@@ -153,7 +153,7 @@ async def answer_question(req: UserQA) -> str:
         raise HTTPException(status_code=500, detail=f"Gemini Q&A failed: {e}")
 
 
-# --- FastAPI App ---
+# --- FastAPI App & Endpoints (No major changes here) ---
 app = FastAPI(title="Legally Made Easy API")
 
 app.add_middleware(
@@ -164,15 +164,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# --- Endpoint Logic ---
-
 @app.get('/')
 async def root():
     return {"message": "API is running 🚀"}
 
 async def process_and_analyze_file(file: UploadFile, language: str):
-    """Helper to process one file and return its structured data."""
     filename = file.filename
     extension_handlers = {".pdf": handle_pdf, ".docx": handle_docx, ".txt": handle_txt}
     
@@ -186,25 +182,21 @@ async def process_and_analyze_file(file: UploadFile, language: str):
         return {"fileName": filename, "error": "File type not supported."}
 
     content = await handler(file)
-    # The summary field now contains the structured JSON string
     structured_summary = await analyze_document_text(content, language)
     
     return {
         "fileName": filename,
-        "fileContent": content, # Keeping for potential future use
-        "fileSummary": structured_summary, # This is the JSON string
+        "fileSummary": structured_summary,
     }
 
 @app.post('/upload')
 async def upload_handle(files: List[UploadFile] = File(...), language: str = Form('english')):
-    """Handles concurrent file uploads and returns structured analysis."""
     tasks = [process_and_analyze_file(file, language) for file in files]
     results = await asyncio.gather(*tasks)
     return {"msg": results}
 
 @app.post('/roadmap')
 async def roadmap_handle(req: UserText):
-    """Handles a user goal and returns a structured roadmap."""
     response = await generate_roadmap_from_goal(req.text, req.language)
     return {"msg": response}
 
