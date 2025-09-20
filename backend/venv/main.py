@@ -18,10 +18,10 @@ from pydantic import BaseModel
 from google import generativeai as genai
 
 # --- Configuration ---
-
-GOOGLE_API_KEY = "AIzaSyBikr4vAWUw4Ost3FfzpIvrSMAExbfVbLM"
+load_dotenv()
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
-    raise ValueError("GOOGLE_API_KEY environment variable not set!")
+    raise ValueError("CRITICAL: GOOGLE_API_KEY environment variable not set!")
 genai.configure(api_key=GOOGLE_API_KEY)
 GEMINI_MODEL_NAME = "gemini-1.5-flash-latest"
 model = genai.GenerativeModel(GEMINI_MODEL_NAME)
@@ -32,16 +32,13 @@ class UserText(BaseModel):
     text: str
     language: str
 
-class QAContextItem(BaseModel):
-    summary: str
-
 class UserQA(BaseModel):
     question: str
-    context: List[QAContextItem]
+    context: List[str]
     language: str
 
 
-# --- File Processing Helpers (No changes needed here) ---
+
 async def handle_pdf(file: UploadFile) -> str:
     try:
         raw_bytes = await file.read()
@@ -80,25 +77,29 @@ async def handle_txt(file: UploadFile) -> str:
         raise HTTPException(status_code=500, detail=f"Failed to read TXT file: {e}")
 
 
-# --- AI Logic Helpers (Prompts Updated) ---
+# --- AI Logic Helpers ---
+# In main.py
+
+# In main.py
 
 async def analyze_document_text(text: str, language: str) -> str:
-    """[MODIFIED] Generates a more detailed structured JSON from document text."""
+    """[UPGRADED PROMPT] Generates a structured JSON with translation as a primary command."""
+    
     prompt = f"""
-    Analyze the following legal text. Act as a meticulous legal analyst.
-    You MUST respond ONLY with a single valid JSON object.
+    Your primary task is to analyze the following legal text and provide a structured JSON output translated into **{language}**.
+    You MUST respond ONLY with a single valid JSON object. All string values within the JSON (summaries, messages, etc.) must be in **{language}**.
+
     The JSON object must have these exact keys: "favourable_terms", "clauses_to_watch", "summary", "alerts".
 
     - "favourable_terms": A list of strings identifying terms that are beneficial to the primary user.
     - "clauses_to_watch": A list of strings pointing out clauses that require careful review or may contain risks.
-    - "summary": A detailed, multi-point summary of the document's purpose and key contents.
+    - "summary": A detailed, multi-point summary of the document's purpose and key contents as a single string.
     - "alerts": A list of objects. Each object must have "severity" ('High', 'Medium', or 'Low') and "message" for critical risks. If none, return an empty list [].
 
-    Analyze this text:
+    Analyze this text and provide the translated JSON:
     ---
     {text}
     ---
-    Translate the text content within the final JSON object into this language: {language}
     """
     try:
         response = await model.generate_content_async(
@@ -109,15 +110,42 @@ async def analyze_document_text(text: str, language: str) -> str:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gemini document analysis failed: {e}")
 
+# In main.py
+
+async def generate_roadmap_from_goal(text: str, language: str) -> str:
+    """[UPGRADED PROMPT] Generates a structured JSON roadmap with translation as a primary command."""
+    
+    prompt = f"""
+    Your primary task is to analyze the following user goal and generate a procedural roadmap as a structured JSON output translated into **{language}**.
+    You MUST respond ONLY with a single valid JSON object. All string values within the JSON must be in **{language}**.
+
+    The JSON object must have these keys: "alerts", "key_points", "timeline".
+
+    - "alerts": List of objects with "severity" and "message" about common risks or prerequisites for this goal.
+    - "key_points": List of crucial tips or facts related to the goal.
+    - "timeline": List of strings representing the step-by-step procedural roadmap.
+
+    Analyze this goal and provide the translated JSON: "{text}"
+    """
+    try:
+        response = await model.generate_content_async(
+            prompt,
+            generation_config={"response_mime_type": "application/json"}
+        )
+        return response.text
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gemini roadmap generation failed: {e}")
+
+# ... The rest of your main.py file remains the same.
 async def generate_roadmap_from_goal(text: str, language: str) -> str:
     """Generates a structured JSON roadmap from a user's goal."""
     prompt = f"""
     Analyze the following user goal. Generate a procedural roadmap.
     Respond ONLY with a single valid JSON object with keys: "alerts", "key_points", "timeline".
 
-    - "alerts": List of objects with "severity" and "message" about common risks for this goal.
-    - "key_points": List of crucial tips or facts.
-    - "timeline": List of strings for the step-by-step roadmap.
+    - "alerts": List of objects with "severity" and "message" about common risks or prerequisites for this goal.
+    - "key_points": List of crucial tips or facts related to the goal.
+    - "timeline": List of strings representing the step-by-step procedural roadmap.
 
     Analyze this goal: "{text}"
     Translate the JSON content into this language: {language}
@@ -132,8 +160,8 @@ async def generate_roadmap_from_goal(text: str, language: str) -> str:
         raise HTTPException(status_code=500, detail=f"Gemini roadmap generation failed: {e}")
 
 async def answer_question(req: UserQA) -> str:
-    """[MODIFIED] Answers a question with more intelligence."""
-    context_str = "\n".join(c.summary for c in req.context)
+    """[UPGRADED] Answers a question with more intelligence."""
+    context_str = "\n".join(req.context)
     prompt = f"""You are a helpful legal and procedural assistant. Your primary goal is to answer the user's question.
     1. First, try to answer the question using the provided CONTEXT.
     2. If the context does not contain the answer but the question is related to the topic, use your general knowledge to provide a helpful, relevant response. Clearly state that this information is from your general knowledge and not the provided document.
@@ -153,7 +181,7 @@ async def answer_question(req: UserQA) -> str:
         raise HTTPException(status_code=500, detail=f"Gemini Q&A failed: {e}")
 
 
-# --- FastAPI App & Endpoints (No major changes here) ---
+# --- FastAPI App ---
 app = FastAPI(title="Legally Made Easy API")
 
 app.add_middleware(
@@ -164,6 +192,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Endpoint Logic ---
 @app.get('/')
 async def root():
     return {"message": "API is running 🚀"}
