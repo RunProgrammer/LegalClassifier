@@ -68,7 +68,7 @@ const FileUploadZone = ({ onUpload, isLoading }) => {
                     </ul>
                 </div>
             )}
-            <button type="submit" disabled={isLoading || files.length === 0} className="w-full mt-4 bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 px-4 rounded-md disabled:bg-gray-500 flex justify-center">
+            <button type="submit" disabled={isLoading || files.length === 0} className="w-full duration-150 hover:duration-150 cursor-pointer mt-4 bg-violet-400 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded-md disabled:bg-gray-500 flex justify-center">
                 {isLoading ? <Spinner /> : 'Analyze Documents'}
             </button>
         </form>
@@ -81,7 +81,7 @@ const ProcedureWalkthrough = ({ onGenerate, isLoading }) => {
             <h2 className="text-xl font-semibold text-white">Legal Procedure Walkthrough</h2>
             <p className="text-sm text-slate-400">Describe your goal and get a step-by-step plan.</p>
             <textarea name="goal" placeholder="e.g., I want to buy a flat in Bangalore" className="p-2 bg-slate-700 border-slate-600 rounded-md h-24 text-white" disabled={isLoading} />
-            <button type="submit" disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-md disabled:bg-gray-500 flex justify-center">
+            <button type="submit" disabled={isLoading} className="w-full cursor-pointer duration-150 hover:duration-150 bg-violet-400 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded-md disabled:bg-gray-500 flex justify-center">
                 {isLoading ? <Spinner /> : 'Generate Roadmap'}
             </button>
         </form>
@@ -346,8 +346,8 @@ const handleExportAnalysisPDF = () => {
         <div className="min-h-screen w-full bg-gradient-to-br from-blue-950 via-slate-900 to-purple-900 p-4 md:p-8 text-white font-sans">
             <div className="max-w-7xl mx-auto">
                 <header className="text-center mb-8">
-                    <h1 className="text-4xl md:text-5xl font-bold">LegalClassifier</h1>
-                    <p className="text-lg text-slate-300 mt-2">Your AI-Powered Legal & Procedural Navigator</p>
+                    {/* <h1 className="text-4xl md:text-5xl font-bold">LegalClassifier</h1> */}
+                    <p className="text-3xl font-sans font-semibold text-slate-300 mt-2">Your AI-Powered Legal & Procedural Navigator</p>
                     <div className="mt-4 flex justify-center items-center gap-2">
                         <label htmlFor="language-select" className="text-slate-300">Language:</label>
                         <select id="language-select" value={language} onChange={(e) => setLanguage(e.target.value)} className='p-2 bg-slate-700 rounded-md text-white'>

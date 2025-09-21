@@ -3,7 +3,7 @@ import asyncio
 import json
 from typing import List
 
-# --- Third-party libraries ---
+
 import fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
@@ -14,10 +14,8 @@ from fastapi import FastAPI, status, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# --- Google Gemini ---
 from google import generativeai as genai
 
-# --- Configuration ---
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
@@ -77,10 +75,7 @@ async def handle_txt(file: UploadFile) -> str:
         raise HTTPException(status_code=500, detail=f"Failed to read TXT file: {e}")
 
 
-# --- AI Logic Helpers ---
-# In main.py
 
-# In main.py
 
 async def analyze_document_text(text: str, language: str) -> str:
     """[UPGRADED PROMPT] Generates a structured JSON with translation as a primary command."""
