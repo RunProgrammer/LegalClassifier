@@ -149,7 +149,7 @@ function Home() {
         }
         formData.append("language", language);
         try {
-            const res = await axios.post("http://127.0.0.1:8000/upload", formData);
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/upload`, formData);
             const apiResponse = res.data.msg[0];
             const structuredData = JSON.parse(apiResponse.fileSummary);
             setResults({ ...structuredData, from: 'document' });
@@ -175,7 +175,7 @@ function Home() {
         setQaHistory([]);
         setCurrentGoal(goal);
         try {
-            const res = await axios.post("http://127.0.0.1:8000/roadmap", { text: goal, language });
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/roadmap`, { text: goal, language });
             const data = JSON.parse(res.data.msg);
             setResults({ ...data, from: 'roadmap' });
             setIsChatOpen(true);
@@ -202,7 +202,7 @@ function Home() {
                 const roadmapContext = `User's Goal: ${currentGoal}\n\nTimeline:\n${results.timeline.join('\n')}\n\nKey Points:\n${results.key_points.join('\n')}`;
                 contextStrings = [roadmapContext];
             }
-            const res = await axios.post('http://127.0.0.1:8000/qa', {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/qa`, {
                 question: qaInput,
                 context: contextStrings,
                 language: language
