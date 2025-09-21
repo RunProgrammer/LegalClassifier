@@ -179,9 +179,14 @@ async def answer_question(req: UserQA) -> str:
 # --- FastAPI App ---
 app = FastAPI(title="Legally Made Easy API")
 
+origins = [
+    "https://legalclassifier.netlify.app"
+]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
