@@ -121,7 +121,7 @@ async def generate_roadmap_from_goal(text: str, language: str) -> str:
     - "timeline": List of strings representing the step-by-step procedural roadmap.
 
     Analyze this goal and provide the translated JSON: "{text}"
-    
+    """
     try:
         response = await model.generate_content_async(
             prompt,
