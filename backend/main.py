@@ -121,7 +121,7 @@ async def generate_roadmap_from_goal(text: str, language: str) -> str:
     - "timeline": List of strings representing the step-by-step procedural roadmap.
 
     Analyze this goal and provide the translated JSON: "{text}"
-    """
+    
     try:
         response = await model.generate_content_async(
             prompt,
@@ -132,27 +132,7 @@ async def generate_roadmap_from_goal(text: str, language: str) -> str:
         raise HTTPException(status_code=500, detail=f"Gemini roadmap generation failed: {e}")
 
 # ... The rest of your main.py file remains the same.
-async def generate_roadmap_from_goal(text: str, language: str) -> str:
-    """Generates a structured JSON roadmap from a user's goal."""
-    prompt = f"""
-    Analyze the following user goal. Generate a procedural roadmap.
-    Respond ONLY with a single valid JSON object with keys: "alerts", "key_points", "timeline".
 
-    - "alerts": List of objects with "severity" and "message" about common risks or prerequisites for this goal.
-    - "key_points": List of crucial tips or facts related to the goal.
-    - "timeline": List of strings representing the step-by-step procedural roadmap.
-
-    Analyze this goal: "{text}"
-    Translate the JSON content into this language: {language}
-    """
-    try:
-        response = await model.generate_content_async(
-            prompt,
-            generation_config={"response_mime_type": "application/json"}
-        )
-        return response.text
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gemini roadmap generation failed: {e}")
 
 async def answer_question(req: UserQA) -> str:
     """[UPGRADED] Answers a question with more intelligence."""
