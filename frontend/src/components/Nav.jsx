@@ -1,18 +1,24 @@
-function Nav(){
-    return (
+import { Link } from 'react-router-dom';
 
-        <div className="w-full ">
-            <nav className="bg-slate-900 justify-around items-center flex">
-                <h1 className="text-white p-4 text-4xl font-sans font-semibold">LegalClassifier</h1>
-                {/* <ul className="text-white text-xl ml-[-130px] flex w-full p-4 justify-center gap-18 items-center font-sans font-semibold">
-                    <li className=" hover:text-yellow-200 hover:text-2xl duration-150 ease-in-out cursor-pointer">Home</li>
-                    <li className=" hover:text-yellow-200 hover:text-2xl duration-150 ease-in-out cursor-pointer">Guide</li>
-                    <li className=" hover:text-yellow-200 hover:text-2xl duration-150 ease-in-out cursor-pointer">Upload</li>
-                </ul> */}
+function Nav() {
+    return (
+        <div className="w-full fixed top-0 z-50 bg-[#0f172a]/90 backdrop-blur-md border-b border-slate-800">
+            <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
+                <Link to="/" className="text-white text-2xl font-sans font-bold flex items-center gap-2">
+                    <span className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center text-white text-lg shadow-lg shadow-amber-900/20">LC</span>
+                    <span className="tracking-tight">LegalClassifier</span>
+                </Link>
+                <ul className="flex gap-8 text-slate-300 font-medium">
+                    <li>
+                        <Link to="/" className="hover:text-amber-500 transition-colors">Home</Link>
+                    </li>
+                    <li>
+                        <Link to="/app" className="hover:text-amber-500 transition-colors">App</Link>
+                    </li>
+                </ul>
             </nav>
         </div>
-
-    )
+    );
 }
 
-export default Nav
+export default Nav;

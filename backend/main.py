@@ -1,8 +1,8 @@
 import os
 import asyncio
 import json
+import io
 from typing import List
-
 
 import fitz  # PyMuPDF
 import pytesseract
@@ -21,7 +21,7 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     raise ValueError("CRITICAL: GOOGLE_API_KEY environment variable not set!")
 genai.configure(api_key=GOOGLE_API_KEY)
-GEMINI_MODEL_NAME = "gemini-1.5-flash-latest"
+GEMINI_MODEL_NAME = "gemini-2.5-flash"
 model = genai.GenerativeModel(GEMINI_MODEL_NAME)
 
 
@@ -35,6 +35,23 @@ class UserQA(BaseModel):
     context: List[str]
     language: str
 
+# --- App Initialization ---
+app = FastAPI()
+
+origins = [
+    "https://legalclassifier.netlify.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:8000"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 async def handle_pdf(file: UploadFile) -> str:
@@ -109,6 +126,7 @@ async def analyze_document_text(text: str, language: str) -> str:
 
 async def generate_roadmap_from_goal(text: str, language: str) -> str:
     """[UPGRADED PROMPT] Generates a structured JSON roadmap with translation as a primary command."""
+    print(f"DEBUG: generate_roadmap_from_goal called with text='{text}', language='{language}'")
     
     prompt = f"""
     Your primary task is to analyze the following user goal and generate a procedural roadmap as a structured JSON output translated into **{language}**.
@@ -123,44 +141,31 @@ async def generate_roadmap_from_goal(text: str, language: str) -> str:
     Analyze this goal and provide the translated JSON: "{text}"
     """
     try:
+        print(f"DEBUG: Calling Gemini model for roadmap generation...")
         response = await model.generate_content_async(
             prompt,
             generation_config={"response_mime_type": "application/json"}
         )
+        print(f"DEBUG: Gemini response received. Length: {len(response.text)}")
         return response.text
     except Exception as e:
+        print(f"DEBUG: Error in generate_roadmap_from_goal: {e}")
         raise HTTPException(status_code=500, detail=f"Gemini roadmap generation failed: {e}")
 
-# ... The rest of your main.py file remains the same.
-async def generate_roadmap_from_goal(text: str, language: str) -> str:
-    """Generates a structured JSON roadmap from a user's goal."""
-    prompt = f"""
-    Analyze the following user goal. Generate a procedural roadmap.
-    Respond ONLY with a single valid JSON object with keys: "alerts", "key_points", "timeline".
-
-    - "alerts": List of objects with "severity" and "message" about common risks or prerequisites for this goal.
-    - "key_points": List of crucial tips or facts related to the goal.
-    - "timeline": List of strings representing the step-by-step procedural roadmap.
-
-    Analyze this goal: "{text}"
-    Translate the JSON content into this language: {language}
-    """
-    try:
-        response = await model.generate_content_async(
-            prompt,
-            generation_config={"response_mime_type": "application/json"}
-        )
-        return response.text
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gemini roadmap generation failed: {e}")
 
 async def answer_question(req: UserQA) -> str:
     """[UPGRADED] Answers a question with more intelligence."""
     context_str = "\n".join(req.context)
-    prompt = f"""You are a helpful legal and procedural assistant. Your primary goal is to answer the user's question.
+    prompt = f"""You are a helpful legal and procedural assistant. Your primary goal is to answer the user's question CONCISELY and CLEARLY.
     1. First, try to answer the question using the provided CONTEXT.
     2. If the context does not contain the answer but the question is related to the topic, use your general knowledge to provide a helpful, relevant response. Clearly state that this information is from your general knowledge and not the provided document.
     3. If the question is completely unrelated to the context, politely decline to answer.
+
+    IMPORTANT FORMATTING RULES:
+    - Keep answers SHORT and to the point. Avoid unnecessary fluff.
+    - Use **bold** for key terms.
+    - Use bullet points for lists to improve readability.
+    - Limit paragraphs to 2-3 sentences.
 
     CONTEXT:
     ---
@@ -173,24 +178,7 @@ async def answer_question(req: UserQA) -> str:
         response = await model.generate_content_async(prompt)
         return response.text
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gemini Q&A failed: {e}")
-
-
-# --- FastAPI App ---
-app = FastAPI(title="Legally Made Easy API")
-
-origins = [
-    "https://legalclassifier.netlify.app"
-]
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+        raise HTTPException(status_code=500, detail=f"Gemini chat failed: {e}")
 
 # --- Endpoint Logic ---
 @app.get('/')
@@ -199,6 +187,7 @@ async def root():
 
 async def process_and_analyze_file(file: UploadFile, language: str):
     filename = file.filename
+    print(f"DEBUG: Processing file: {filename}")
     extension_handlers = {".pdf": handle_pdf, ".docx": handle_docx, ".txt": handle_txt}
     
     handler = None
@@ -220,12 +209,14 @@ async def process_and_analyze_file(file: UploadFile, language: str):
 
 @app.post('/upload')
 async def upload_handle(files: List[UploadFile] = File(...), language: str = Form('english')):
+    print(f"DEBUG: upload_handle called with {len(files)} files, language={language}")
     tasks = [process_and_analyze_file(file, language) for file in files]
     results = await asyncio.gather(*tasks)
     return {"msg": results}
 
 @app.post('/roadmap')
 async def roadmap_handle(req: UserText):
+    print(f"DEBUG: roadmap_handle called with req={req}")
     response = await generate_roadmap_from_goal(req.text, req.language)
     return {"msg": response}
 
