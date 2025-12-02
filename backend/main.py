@@ -152,6 +152,11 @@ async def generate_roadmap_from_goal(text: str, language: str) -> str:
         print(f"DEBUG: Error in generate_roadmap_from_goal: {e}")
         raise HTTPException(status_code=500, detail=f"Gemini roadmap generation failed: {e}")
 
+<<<<<<< HEAD
+=======
+# ... The rest of your main.py file remains the same.
+
+>>>>>>> 69e0613d33f74f7fb129d3903b3b998e49d2a253
 
 async def answer_question(req: UserQA) -> str:
     """[UPGRADED] Answers a question with more intelligence."""
