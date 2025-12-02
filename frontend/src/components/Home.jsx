@@ -5,6 +5,7 @@ import { FiAlertTriangle, FiCheckCircle, FiEye, FiFileText, FiMessageSquare, FiC
 import jsPDF from 'jspdf';
 import { toPng } from 'html-to-image';
 import ReactMarkdown from 'react-markdown';
+import heroImage from '../assets/hero.png';
 
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -14,7 +15,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const Spinner = () => <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>;
 
 const SidebarItem = ({ icon, label, active, onClick }) => (
-    <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${active ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}>
+    <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${active ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/20' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}>
         <span className="text-xl">{icon}</span>
         <span className="font-medium">{label}</span>
     </button>
@@ -32,7 +33,7 @@ const getSeverityClass = (severity) => {
 const DashboardCard = ({ title, icon, children, className = "" }) => (
     <div className={`bg-slate-800/40 border border-slate-700/50 rounded-xl p-6 ${className}`}>
         <div className="flex items-center gap-3 mb-4 border-b border-slate-700/50 pb-3">
-            <div className="text-indigo-400 text-xl">{icon}</div>
+            <div className="text-amber-400 text-xl">{icon}</div>
             <h3 className="text-lg font-semibold text-slate-200">{title}</h3>
         </div>
         <div>{children}</div>
@@ -191,11 +192,11 @@ function Home() {
                 <div className="p-6 flex items-center justify-between">
                     {isSidebarOpen ? (
                         <Link to="/" className="flex items-center gap-2 font-bold text-xl text-white">
-                            <span className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm shadow-lg shadow-indigo-900/20">LC</span>
+                            <span className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center text-white text-sm shadow-lg shadow-amber-900/20">LC</span>
                             <span>LegalClassifier</span>
                         </Link>
                     ) : (
-                        <span className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm mx-auto">LC</span>
+                        <span className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center text-white text-sm mx-auto">LC</span>
                     )}
                 </div>
 
@@ -224,14 +225,14 @@ function Home() {
                         <select
                             value={language}
                             onChange={(e) => setLanguage(e.target.value)}
-                            className="bg-slate-800 text-slate-200 text-sm px-3 py-1.5 rounded-md border border-slate-700 focus:outline-none focus:border-indigo-500"
+                            className="bg-slate-800 text-slate-200 text-sm px-3 py-1.5 rounded-md border border-slate-700 focus:outline-none focus:border-amber-500"
                         >
                             <option value="english">English</option>
                             <option value="tamil">Tamil</option>
                             <option value="malayalam">Malayalam</option>
                             <option value="hindi">Hindi</option>
                         </select>
-                        <div className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-xs font-bold text-indigo-400">
+                        <div className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-xs font-bold text-amber-400">
                             US
                         </div>
                     </div>
@@ -248,7 +249,7 @@ function Home() {
                                 <div>
                                     <h1 className="text-5xl font-extrabold text-white mb-4 leading-tight">
                                         Legal Clarity, <br />
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Simplified.</span>
+                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600">Simplified.</span>
                                     </h1>
                                     <p className="text-slate-400 text-lg leading-relaxed max-w-xl">
                                         Transform complex legal documents into clear summaries and actionable roadmaps with our AI-powered assistant.
@@ -257,12 +258,12 @@ function Home() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {/* Document Analysis Action */}
-                                    <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 hover:border-indigo-500/30 transition-all group relative overflow-hidden">
+                                    <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 hover:border-amber-500/30 transition-all group relative overflow-hidden">
                                         <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
                                             <FiFileText size={80} />
                                         </div>
                                         <div className="relative z-10">
-                                            <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center text-blue-400 mb-4">
+                                            <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center text-amber-400 mb-4">
                                                 <FiUploadCloud size={20} />
                                             </div>
                                             <h3 className="text-lg font-bold text-white mb-1">Analyze Document</h3>
@@ -275,19 +276,19 @@ function Home() {
                                     </div>
 
                                     {/* Roadmap Action */}
-                                    <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 hover:border-indigo-500/30 transition-all group relative overflow-hidden">
+                                    <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 hover:border-amber-500/30 transition-all group relative overflow-hidden">
                                         <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
                                             <FiMap size={80} />
                                         </div>
                                         <div className="relative z-10">
-                                            <div className="w-10 h-10 bg-indigo-500/10 rounded-lg flex items-center justify-center text-indigo-400 mb-4">
+                                            <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center text-amber-400 mb-4">
                                                 <FiMap size={20} />
                                             </div>
                                             <h3 className="text-lg font-bold text-white mb-1">Create Roadmap</h3>
                                             <p className="text-slate-400 text-sm mb-4">Step-by-step legal guides.</p>
                                             <form onSubmit={handleProcedureGeneration} className="flex gap-2">
-                                                <input name="goal" type="text" placeholder="e.g. Buy a house" className="flex-1 bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 text-slate-200 placeholder-slate-500" />
-                                                <button type="submit" disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg font-medium text-sm transition-colors shadow-lg shadow-indigo-900/20">
+                                                <input name="goal" type="text" placeholder="e.g. Buy a house" className="flex-1 bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 text-slate-200 placeholder-slate-500" />
+                                                <button type="submit" disabled={isLoading} className="bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-lg font-medium text-sm transition-colors shadow-lg shadow-amber-900/20">
                                                     {isLoading ? <Spinner /> : <FiArrowRight />}
                                                 </button>
                                             </form>
@@ -296,13 +297,12 @@ function Home() {
                                 </div>
 
                                 <div className="flex items-center gap-6 text-sm text-slate-500 font-medium pt-2">
-                                    <span className="flex items-center gap-2"><FiCheckCircle className="text-indigo-500" /> AI Powered</span>
-                                    <span className="flex items-center gap-2"><FiCheckCircle className="text-indigo-500" /> Secure & Private</span>
-                                    <span className="flex items-center gap-2"><FiCheckCircle className="text-indigo-500" /> Instant Results</span>
+                                    <span className="flex items-center gap-2"><FiCheckCircle className="text-amber-500" /> AI Powered</span>
+                                    <span className="flex items-center gap-2"><FiCheckCircle className="text-amber-500" /> Secure & Private</span>
+                                    <span className="flex items-center gap-2"><FiCheckCircle className="text-amber-500" /> Instant Results</span>
                                 </div>
                             </div>
 
-                            {/* Right Column: Hero Image */}
                             
 
                         </div>
@@ -312,7 +312,7 @@ function Home() {
                     {activeTab === 'history' && !results && (
                         <div className="max-w-5xl mx-auto animate-fade-in">
                             <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                                <FiClock className="text-indigo-500" /> Analysis History
+                                <FiClock className="text-amber-500" /> Analysis History
                             </h2>
                             {history.length === 0 ? (
                                 <div className="text-center py-12 bg-slate-800/30 rounded-xl border border-slate-700/50">
@@ -322,17 +322,17 @@ function Home() {
                             ) : (
                                 <div className="grid gap-4">
                                     {history.map((item, index) => (
-                                        <div key={index} onClick={() => { setResults(item); setActiveTab('dashboard'); }} className="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl hover:border-indigo-500/30 hover:bg-slate-800/60 transition-all cursor-pointer flex items-center justify-between group">
+                                        <div key={index} onClick={() => { setResults(item); setActiveTab('dashboard'); }} className="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl hover:border-amber-500/30 hover:bg-slate-800/60 transition-all cursor-pointer flex items-center justify-between group">
                                             <div className="flex items-center gap-4">
-                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.from === 'document' ? 'bg-blue-900/20 text-blue-400' : 'bg-indigo-900/20 text-indigo-400'}`}>
+                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.from === 'document' ? 'bg-amber-900/20 text-amber-400' : 'bg-amber-900/20 text-amber-400'}`}>
                                                     {item.from === 'document' ? <FiFileText size={20} /> : <FiMap size={20} />}
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-semibold text-slate-200 group-hover:text-indigo-400 transition-colors">{item.fileName}</h3>
+                                                    <h3 className="font-semibold text-slate-200 group-hover:text-amber-400 transition-colors">{item.fileName}</h3>
                                                     <p className="text-xs text-slate-500">{item.date}</p>
                                                 </div>
                                             </div>
-                                            <FiChevronRight className="text-slate-600 group-hover:text-indigo-400 transition-colors" />
+                                            <FiChevronRight className="text-slate-600 group-hover:text-amber-400 transition-colors" />
                                         </div>
                                     ))}
                                 </div>
@@ -349,13 +349,13 @@ function Home() {
                                         <FiChevronRight className="rotate-180" /> Back to Workspace
                                     </button>
                                     <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                                        {results.from === 'document' ? <FiFileText className="text-indigo-500" /> : <FiMap className="text-indigo-500" />}
+                                        {results.from === 'document' ? <FiFileText className="text-amber-500" /> : <FiMap className="text-amber-500" />}
                                         {results.fileName || "Procedural Roadmap"}
                                     </h2>
                                 </div>
                                 <div className="flex gap-3">
                                     <button onClick={handleExportPDF} className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 hover:text-white hover:border-slate-600 transition-all text-sm font-medium">Export PDF</button>
-                                    <button onClick={() => setResults(null)} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-lg shadow-indigo-900/20 text-sm font-medium">New Analysis</button>
+                                    <button onClick={() => setResults(null)} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg shadow-lg shadow-amber-900/20 text-sm font-medium">New Analysis</button>
                                 </div>
                             </div>
 
@@ -396,7 +396,7 @@ function Home() {
                                                 <div key={i} className="space-y-2">
                                                     {/* User Question */}
                                                     <div className="flex justify-end">
-                                                        <div className="bg-indigo-600 text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[85%] text-sm shadow-md break-words whitespace-pre-wrap">
+                                                        <div className="bg-amber-600 text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[85%] text-sm shadow-md break-words whitespace-pre-wrap">
                                                             {qa.question}
                                                         </div>
                                                     </div>
@@ -408,7 +408,7 @@ function Home() {
                                                                 ol: ({ node, ...props }) => <ol className="list-decimal ml-4 mt-2 space-y-1" {...props} />,
                                                                 li: ({ node, ...props }) => <li className="pl-1" {...props} />,
                                                                 p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                                                                strong: ({ node, ...props }) => <strong className="font-bold text-indigo-300" {...props} />
+                                                                strong: ({ node, ...props }) => <strong className="font-bold text-amber-300" {...props} />
                                                             }}>
                                                                 {qa.answer}
                                                             </ReactMarkdown>
@@ -418,8 +418,8 @@ function Home() {
                                             ))}
                                         </div>
                                         <form onSubmit={handleQA} className="flex gap-2 mt-auto pt-4 border-t border-slate-700/50">
-                                            <input name="qaInput" type="text" placeholder="Ask a question..." className="flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors" />
-                                            <button type="submit" disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-full transition-colors shadow-lg shadow-indigo-900/20"><FiSend /></button>
+                                            <input name="qaInput" type="text" placeholder="Ask a question..." className="flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-amber-500 transition-colors" />
+                                            <button type="submit" disabled={isLoading} className="bg-amber-600 hover:bg-amber-500 text-white p-2.5 rounded-full transition-colors shadow-lg shadow-amber-900/20"><FiSend /></button>
                                         </form>
                                     </DashboardCard>
                                 </div>
@@ -434,7 +434,7 @@ function Home() {
                                                     ul: ({ node, ...props }) => <ul className="list-disc ml-4 mt-2 space-y-1" {...props} />,
                                                     li: ({ node, ...props }) => <li className="pl-1" {...props} />,
                                                     p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                                                    strong: ({ node, ...props }) => <strong className="font-bold text-indigo-300" {...props} />
+                                                    strong: ({ node, ...props }) => <strong className="font-bold text-amber-300" {...props} />
                                                 }}>
                                                     {results.summary}
                                                 </ReactMarkdown>
@@ -444,8 +444,8 @@ function Home() {
                                             <ol className="relative border-l border-slate-700 space-y-6 ml-2 mt-4">
                                                 {results.timeline.map((step, i) => (
                                                     <li key={i} className="ml-6">
-                                                        <span className="absolute flex items-center justify-center w-6 h-6 bg-slate-800 border border-indigo-500 rounded-full -left-3">
-                                                            <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                                                        <span className="absolute flex items-center justify-center w-6 h-6 bg-slate-800 border border-amber-500 rounded-full -left-3">
+                                                            <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
                                                         </span>
                                                         <h4 className="font-bold text-slate-200 mb-1">Step {i + 1}</h4>
                                                         <p className="text-slate-400 text-sm">{step}</p>
