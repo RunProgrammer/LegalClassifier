@@ -1,6 +1,5 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { FiArrowRight, FiFileText, FiMap, FiMessageSquare, FiShield, FiLock, FiAward, FiHelpCircle, FiChevronDown, FiCheck } from 'react-icons/fi';
+import { FiArrowRight, FiFileText, FiMap, FiMessageSquare, FiShield, FiLock, FiChevronDown, FiCheck } from 'react-icons/fi';
 import heroImage from '../assets/hero.png';
 
 const LandingPage = () => {
@@ -62,13 +61,13 @@ const LandingPage = () => {
             {/* Trust Signals Section */}
             <section className="py-12 bg-slate-900/50 border-y border-slate-800/50">
                 <div className="container mx-auto px-6 text-center">
-                    <p className="text-slate-500 text-sm uppercase tracking-widest mb-8">Trusted by Professionals & Individuals Alike</p>
-                    <div className="flex flex-wrap justify-center gap-12 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
-                        {/* Mock Logos */}
-                        <div className="text-2xl font-bold text-slate-400 flex items-center gap-2"><FiShield /> LegalTech</div>
-                        <div className="text-2xl font-bold text-slate-400 flex items-center gap-2"><FiAward /> LawDaily</div>
-                        <div className="text-2xl font-bold text-slate-400 flex items-center gap-2"><FiCheck /> SecureDocs</div>
-                        <div className="text-2xl font-bold text-slate-400 flex items-center gap-2"><FiLock /> PrivacyFirst</div>
+                    <p className="text-slate-500 text-sm uppercase tracking-widest mb-8">Built Around Practical Legal Workflows</p>
+                    <div className="flex flex-wrap justify-center gap-4">
+                        <div className="rounded-full border border-slate-700 bg-slate-800/60 px-5 py-3 text-sm font-semibold text-slate-300">Multi-file document uploads</div>
+                        <div className="rounded-full border border-slate-700 bg-slate-800/60 px-5 py-3 text-sm font-semibold text-slate-300">OCR for scanned PDF pages</div>
+                        <div className="rounded-full border border-slate-700 bg-slate-800/60 px-5 py-3 text-sm font-semibold text-slate-300">Roadmaps in multiple languages</div>
+                        <div className="rounded-full border border-slate-700 bg-slate-800/60 px-5 py-3 text-sm font-semibold text-slate-300">Follow-up Q and A on current results</div>
+                        <div className="rounded-full border border-slate-700 bg-slate-800/60 px-5 py-3 text-sm font-semibold text-slate-300">PDF export of the active view</div>
                     </div>
                 </div>
             </section>
@@ -108,24 +107,24 @@ const LandingPage = () => {
                         <div className="md:w-1/2">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-900/30 border border-green-800 mb-6">
                                 <FiLock className="text-green-500" />
-                                <span className="text-sm text-green-500 font-medium uppercase tracking-wide">Enterprise Grade Security</span>
+                                <span className="text-sm text-green-500 font-medium uppercase tracking-wide">Privacy-Conscious Workflow</span>
                             </div>
-                            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white font-serif">Your Data, Protected.</h2>
+                            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white font-serif">Designed To Limit Friction.</h2>
                             <p className="text-slate-400 text-lg leading-relaxed mb-8 font-light">
-                                We understand the sensitivity of legal documents. Our platform is built with privacy-first architecture to ensure your information remains confidential.
+                                Legal documents are sensitive, so this MVP keeps the workflow simple: upload, analyze, review, and export. Use it as an assistance layer, and review your deployment and provider settings before making stronger privacy guarantees.
                             </p>
                             <ul className="space-y-4">
                                 <li className="flex items-center gap-3 text-slate-300">
                                     <FiCheck className="text-amber-500 text-xl" />
-                                    <span>End-to-end encryption for all file uploads</span>
+                                    <span>No user accounts or saved cloud history in this repo</span>
                                 </li>
                                 <li className="flex items-center gap-3 text-slate-300">
                                     <FiCheck className="text-amber-500 text-xl" />
-                                    <span>No permanent storage of analyzed documents</span>
+                                    <span>Current-session analysis with export from the app view</span>
                                 </li>
                                 <li className="flex items-center gap-3 text-slate-300">
                                     <FiCheck className="text-amber-500 text-xl" />
-                                    <span>Anonymous processing protocols</span>
+                                    <span>Provider-side handling still depends on your Gemini setup</span>
                                 </li>
                             </ul>
                         </div>
@@ -133,8 +132,8 @@ const LandingPage = () => {
                             <div className="absolute inset-0 bg-amber-500/20 blur-[100px] rounded-full"></div>
                             <div className="relative bg-slate-800/50 border border-slate-700 p-8 rounded-2xl backdrop-blur-sm">
                                 <FiShield className="text-8xl text-amber-500 mb-6" />
-                                <h3 className="text-2xl font-bold text-white mb-2">Secure Processing</h3>
-                                <p className="text-slate-400">Our AI models process data in isolated environments, ensuring no leakage or training on your private data.</p>
+                                <h3 className="text-2xl font-bold text-white mb-2">Clearer Product Boundaries</h3>
+                                <p className="text-slate-400">This app focuses on summarization, risk surfacing, procedural guidance, and question answering. It does not replace a qualified legal professional.</p>
                             </div>
                         </div>
                     </div>
@@ -156,11 +155,11 @@ const LandingPage = () => {
                         />
                         <FaqItem
                             question="What file formats do you support?"
-                            answer="We currently support PDF and DOCX formats for document analysis. We are working on adding support for image-based documents (OCR) soon."
+                            answer="We currently support PDF, DOCX, and TXT uploads. Scanned PDF pages can also fall back to OCR when direct text extraction is not available."
                         />
                         <FaqItem
                             question="Is my data shared with third parties?"
-                            answer="Absolutely not. Your documents are processed solely for the purpose of analysis and are not shared, sold, or stored permanently on our servers."
+                            answer="This repo does not implement user accounts or long-term document history, but uploaded content is still processed through the configured AI provider. Review your deployment and provider settings before making strict privacy commitments."
                         />
                         <FaqItem
                             question="Can I use this for any jurisdiction?"
@@ -209,16 +208,6 @@ const FeatureCard = ({ icon, title, description }) => (
         <div className="mb-6 p-4 rounded-lg bg-slate-900/80 inline-block group-hover:scale-110 transition-transform border border-slate-800 shadow-lg">{icon}</div>
         <h3 className="text-xl font-bold mb-3 text-slate-100 font-serif">{title}</h3>
         <p className="text-slate-400 leading-relaxed font-light">{description}</p>
-    </div>
-);
-
-const StepCard = ({ number, title, description }) => (
-    <div className="relative z-10 flex flex-col items-center text-center group">
-        <div className="w-24 h-24 rounded-full bg-[#0f172a] border-2 border-slate-800 group-hover:border-amber-500/50 transition-colors flex items-center justify-center text-3xl font-bold text-amber-500 mb-6 shadow-2xl shadow-black/50">
-            {number}
-        </div>
-        <h3 className="text-xl font-bold mb-3 text-white font-serif">{title}</h3>
-        <p className="text-slate-400 max-w-xs font-light">{description}</p>
     </div>
 );
 
